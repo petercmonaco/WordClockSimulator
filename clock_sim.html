@@ -1,0 +1,194 @@
+<html>
+    <head>
+	<style>
+	 .tile {
+	     height:45;
+	     width:48;
+	     color:white;
+	     background:black;
+	     text-align:center;
+	     float:left; 
+	     font-family:gulim;
+	     font-size:30;
+	 }
+	 .tilebreak {
+	     height:45;
+	     width:48;
+	     float:none
+	 }
+	</style>
+    </head>
+    <body>
+	<div id="panel">
+	</div>
+	<p> The grid above displays the current time.
+	    To test a time, enter it in 24-hour format (hh:mm) below and hit enter.
+	    The display will revert to the current time after a few seconds.</p>
+	<input id="ad_hoc_time"/>
+
+	<script type="text/javascript">
+
+	 // Change the strings below to reflect your planned grid.
+	 // Make sure all strings are the same length.
+	 // Any spaces will be replaced with random characters from RANDCHARS.
+	 var row_strs = [
+	     " IT IS             ",
+	     "ONE  TWO  THREE    ",
+	     " FOUR FIVE SIX     ",
+	     "   SEVEN  EIGHT    ",
+	     "   NINE    TEN     ",
+	     " ELEVEN      TWELVE",
+	     "  OH FIVE  TEN     ",
+	     " FIFTEEN TWENTY    ",
+	     " O'CLOCK   THIRTY  ",
+	     " FORTY FIFTY FIVE  ",
+	     "IN THE    AFTERNOON",
+	     "  AT NIGHT  MORNING",
+	 ];
+	 var NUM_ROWS = row_strs.length;
+	 var NUM_COLS = row_strs[0].length;
+
+	 // Code below replaces spaces in the text grid above with random chars.
+	 // This is easier than adding random chars manually when you're experimenting.
+	 // Change RANDCHARS if you want a different set of letters in your grid."
+	 var RANDCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&";
+	 for (r = 0; r < NUM_ROWS; r++) {
+	     chars = row_strs[r].split('');
+	     for (var c=0; c < chars.length; c++) {
+		 if (chars[c] == ' ') {
+		     chars[c] = RANDCHARS.charAt(Math.floor(Math.random() * RANDCHARS.length));
+		 }
+	     }
+	     row_strs[r] = chars.join("");
+	 }
+
+	 function rowColToId(row_num, col_num) { return "row"+row_num+",col"+col_num; }
+
+	 // Function to dim all letters in the grid.
+	 function dimAll() {
+	     for (c=0; c < NUM_COLS; c++) {
+		 for (r=0; r < NUM_ROWS; r++) {
+		     document.getElementById(rowColToId(r, c)).style.color="#1a1a1a";
+		 }
+	     }
+	 }
+
+	 // Function to highlight a single letter.
+	 function highlightLetter(row_num, col_num) {
+	     document.getElementById(rowColToId(row_num, col_num)).style.color="white";
+	 }
+
+	 // Function finds the first instance of a word in the grid, and highlights it.
+	 function highlightWord(w) {
+	     return highlightWordFrom(w, 0, 0);
+	 }
+
+	 // Function finds and highlights a word, starting the search at first_row/first_col.
+	 function highlightWordFrom(w, first_row, first_col) {
+	     for (var row_num = first_row; row_num < NUM_ROWS; row_num++) {
+		 row_str = row_strs[row_num];
+		 i = row_str.indexOf(w, first_col);
+		 first_col = 0; // for the next row
+		 if (i != -1) {
+		     for (offset = 0; offset < w.length; offset++) {
+			 highlightLetter(row_num, i+offset);
+		     }
+		     var col_num = i + offset;
+		     return {row_num, col_num};
+		 }
+	     };
+	     // Didn't find it
+	     row_num = 0;
+	     var col_num = 0;
+	     return {row_num, col_num};
+	 }
+
+	 // Call this function to light up a full sentence in the grid.
+	 function highlightWords(words) {
+	     var first_row = 0;
+	     var first_col = 0;
+	     word_array = words.split(" ");
+	     word_array.forEach(function(word, i) {
+		 resp = highlightWordFrom(word, first_row, first_col);
+		 first_row = resp.row_num;
+		 first_col = resp.col_num;
+	     });
+	 }
+
+	 // This function converts a Date object to a sentence.
+	 var HOUR_WORDS = ["TWELVE", "ONE", "TWO", "THREE", "FOUR", "FIVE",
+			   "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE"];
+	 var MINUTE_WORDS = ["O'CLOCK", "OH FIVE", "TEN", "FIFTEEN",
+			     "TWENTY", "TWENTY FIVE", "THIRTY", "THIRTY FIVE",
+			     "FORTY", "FORTY FIVE", "FIFTY", "FIFTY FIVE"];
+	 function dateToSentence(d) {
+	     var hour = d.getHours();
+	     if (hour < 12) {
+		 hour_words = HOUR_WORDS[hour];
+		 am_pm = "IN THE MORNING";
+	     } else if (hour < 18) {
+		 hour_words = HOUR_WORDS[hour-12];
+		 am_pm = "IN THE AFTERNOON";
+	     } else {
+		 hour_words = HOUR_WORDS[hour-12];
+		 am_pm = "AT NIGHT";
+	     }
+	     var minute_words = MINUTE_WORDS[Math.floor(d.getMinutes()/5)];
+
+	     return "IT IS "+hour_words+" "+minute_words+" "+am_pm;
+	 }
+	 
+	 // Setup: create one HTML "tile" for each letter in the grid
+	 var panel = document.getElementById("panel");
+	 row_strs.forEach(function(row_str, row_num) {
+	     for (i = 0; i < row_str.length; i++) {
+		 n = document.createElement("div");
+		 n.setAttribute("class", "tile");
+		 n.setAttribute("id", rowColToId(row_num, i));
+		 n.textContent=""+row_str.charAt(i);
+		 panel.appendChild(n);
+	     };
+	     n = document.createElement("div");
+	     n.setAttribute("class", "tilebreak");
+	     panel.appendChild(n);
+	 });
+
+	 // Whenever this method is called, it gets the current time,
+	 // converts it to a sentence, and displays it on the grid.
+	 function updateTime() {
+	     dimAll();
+	     var sentence = dateToSentence(new Date());
+	     highlightWords(sentence);
+	 }
+
+	 // Render the current time, and set a timer to re-do it every 10 seconds.
+	 updateTime();
+	 window.setInterval(updateTime, 10000);
+
+	 // This is the code that reads the hh:mm time on <enter>,
+	 // parses it, and displays it.
+	 var text_entry_field = document.getElementById("ad_hoc_time");
+	 function alertAboutInputError() { alert("Only hh::mm in the text field"); }
+	 text_entry_field.onkeypress = function(event) {
+	     if (event.keyCode == 13) {
+		 pieces = text_entry_field.value.split(":");
+		 if (pieces.length != 2) {
+		     alertAboutInputError();
+		     return;
+		 }
+		 hrs = parseInt(pieces[0]);
+		 mins = parseInt(pieces[1]);
+		 if (isNaN(hrs) || isNaN(mins)) {
+		     alertAboutInputError();
+		     return;
+		 }
+		 hd = new Date(2020, 7, 7, hrs, mins, 0, 0);
+		 s = dateToSentence(hd);
+		 dimAll();
+		 highlightWords(s);
+	     }
+	 };
+
+	</script>
+    </body>
+</html>
